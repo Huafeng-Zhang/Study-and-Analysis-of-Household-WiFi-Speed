@@ -1,0 +1,192 @@
+\documentclass[preprint,11pt]{elsarticle}
+\usepackage{parskip,hyperref,palatino,float,fullpage,pdflscape,graphicx,parskip,hyperref, caption,subcaption}
+\usepackage[document]{ragged2e}
+\usepackage{setspace}
+\doublespacing
+\usepackage[utf8]{inputenc}
+\pagenumbering{arabic}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{amssymb}
+\usepackage{lipsum}
+\usepackage{parskip} % Adds spacing between paragraphs
+\setlength{\parindent}{15pt} % Indent paragraphs
+
+
+
+\begin{document}
+
+\begin{frontmatter}
+\title{Study \& Analysis of Household WiFi Speed}
+\author{Huafeng Zhang}
+\journal{STAT441}
+\end{frontmatter}
+
+<<setup, cache = FALSE, echo = FALSE, eval = TRUE, message = FALSE,warning=FALSE>>=
+library(knitr)
+opts_chunk$set(echo = FALSE, cache = FALSE, message = FALSE,
+               comment = NA, size = 'footnotesize', width = 80, dev = 'pdf',
+               dev.args = list(family = 'Palatino', pointsize = 11),
+               fig.path = 'figure/', cache.path = 'cache/', fig.pos = 'H',
+               fig.align = 'center', fig.height = 4, fig.width = 6.5,
+               show.signif.stars = FALSE)
+options(show.signif.stars = FALSE)
+library(xtable)
+library(gdata)
+library(ca)
+library(MASS)
+library(dplyr)
+library(ggbiplot)
+library(ggplot2)
+library(corrplot)
+library(fpc)
+library(vegan)
+library(ape)
+library(zipcode)
+library(mapdata)
+library(tabplot)
+library(missMDA)
+library(Rtsne)
+library(plotly)
+library(mosaic)
+library(FactoMineR)
+library(factoextra)
+@
+\section{Introduction}
+Since the internet is an important source of information, people need high-speed WiFi to study, work and keep in touch with friends and colleagues. People realize that WiFi speed is related to whether there is an obstacle between the router and their devices, how far their devices are from their router, and the number of users. In this experiment, I will conduct a balanced three-factor factorial study to test the main effects of these three variables, as well as the potential effects of interactions among these three variables on WiFi speed. My questions of interest include the following:
+\begin{itemize}
+  \item {Do obstacles affect WiFi speed?}
+  \item{How does the distance between WiFi router and WiFi users affect the WiFi speed?}
+  \item{How does the number of WiFi users affect WiFi speed?}
+  \item{Is there any interaction among these three factors?}
+\end{itemize}
+
+\section{Study Design & Protocol}
+In this experiment, there are three fixed factors: \textbf{obstacle} (2 levels: with or without), \textbf{distance} between WiFi router and WiFi users (three levels: 10, 30 and 50 feet), and \textbf{number of WiFi users} (four levels: 1, 2, 3, or 4 users, all using Apple devices). The response variable is WiFi download speed for the chosen user measured in Mbps using the \emph{testmy.net} website. There are five independent replications at each of the 24 (2 $\times$ 3 $\times$ 4) treatment combinations. So the design size is 120 (2 $\times$ 3 $\times$ 4 $\times$ 5). 
+
+With an assistant, I collected data in the early morning, to minimize noise from nearby networks. In order to maintain the independence of the 120 experimental units, we used Google Incognito tabs to prevent the webpage from referencing stored WiFi speed data from our previous run. Furthermore, no other activities that require WiFi were allowed during the experiment.
+\begin{itemize}
+  \item {The obstacle was simulated by putting a computer monitor and a board to simulate a wall containing wiring between the WiFi router and WiFi users.}
+  \item{The distance between router and users was measured indoors in a straight line free of obstacles.}
+  \item{I had each group of 1 to 4 users download the same file (12 MB data) at the same time.}
+  \item{The order of the 120 experimental runs is completely randomized.}
+\end{itemize}
+
+After collecting the data, I first used diagnostic plots to check the assumptions for a three-factor analysis of variance (ANOVA), which is used for testing the effects of these three variables on WiFi speed. Before drawing conclusions about significant differences, I ran a power analysis to find the power for the given design size (120) and the 24 mean estimates.
+
+\section{Methods}
+In this design, all three factors are fixed, and the model for the three-factor completely randomized design is $y_{ijkl}$ = $\mu$ + $\tau_{i}$ + $\beta_j$ + $\gamma_k$ + $({\tau\beta})_{ij}$ + $({\tau\gamma})_{ik}$ + $ ({\beta\gamma})_{jk}$ + $({\tau\beta\gamma})_{ijk}$ + $\xi_{ijkl}$, where:
+\begin{itemize}
+\item{$y_{ijkl}$ is the WiFi speed for $l^{th}$ observation from the $(i,j,k)^{th}$ treatment.}
+\item{$\mu$ is the baseline mean of WiFi speed.}
+  \item {$\tau_{i}$, $\beta_j$, $\gamma_k$ are the three main effects for the factors obstacle, distance, and number of users, respectively.}
+  \item{${\tau\beta}_{ij}$,  ${\tau\gamma}_{ik}$, ${\beta\gamma}_{jk}$ are the two-factor interaction effects for the interaction \emph{obstacle * distance},\emph{obstacle * number of users}, and \emph{distance * number of users}.}
+  \item{${\tau\beta\gamma}_{ijk}$ are the three factor interaction effects for the  \emph{obstacle * distance * number of users} interaction.}
+  \item{$\xi_{ijkl}$ is the random error of the $l^{th}$ observation from the $(i,j,k)^{th}$ treatment. }
+\end{itemize}
+
+The assumptions of using this generalized linear model for the three-factor factorial design include the following:
+\begin{itemize}
+  \item {The 120 experimental units are independent from each other.}
+  \item{The residuals have constant variance.}
+  \item{The residuals are normally distributed, i.e. $\xi_{ijkl}$ $\sim$ IID N(0, $\sigma^2$).}
+\end{itemize}
+
+Using the model above yields the plots in Figure 1. The Residuals vs. Fitted Values plot (Figure 1(a)) is used to assess homogeneity of variance and absence of outlier assumptions, while the Normal Q-Q plot (Figure 1(b)) is used to assess normality of the residuals. An increasing pattern of the variability of the residuals appears in Figure 1(a), which indicates that there are severe violations of the assumption of homogeneity of variance. Figure 1(b) suggests that the distribution of the residuals is right skewed. An initial inspection of the diagnostic plots (Figure 1) from this model suggests the need for a transformation of the response \textbf{Speed}.
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{1a.png} 
+        \caption{Residual vs. Fitted Values} \label{fig:timing1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{1b.png} 
+        \caption{Normal Quantitle-Quantile (Normal Q-Q) } \label{fig:timing2}
+    \end{subfigure}
+    \caption{Diagnostics Plots}
+\end{figure}
+
+Therefore,a Box-Cox procedure was used to find the optimal transformed scale $\lambda$ of the response. Figure 2 suggests that the optimal $\lambda$ is 0.4, which maximizes the percentage of variance explained by the chosen model. 
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.8]{box-cox.png}
+\caption{Box-Cox Transformation Using the TRANSREG Procedure}
+\end{figure}
+
+However, as we can see from Figure 3, the values of log(Speed) and $ Speed^{0.4}$ are close to each other within the range of my WiFi speed (4-15 Mbps), and $R^2$ for the model using log(Speed), 0.9144, is close to $R^2$ for the model using $Speed^{0.4}$ (0.9149). Since it is easier to interpret the results when using log(Speed), I transformed Speed to log(Speed).
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.4]{function.jpg}
+\caption{log(Speed) vs. $Speed^0.4$}
+\end{figure}
+
+After transforming the response variable WiFi speed logarithmically, the new model for this analysis is $y_{ijkl}$ = $\mu$ + $\tau_{i}$ + $\beta_j$ + $\gamma_k$ + $({\tau\beta})_{ij}$ + $({\tau\gamma})_{ik}$ + $ ({\beta\gamma})_{jk}$ + $({\tau\beta\gamma})_{ijk}$ + $\xi_{ijkl}$, where:
+\begin{itemize}
+\item{$y_{ijkl}$ is the log WiFi speed for $l^{th}$ observation from the $(i,j,k)^{th}$ treatment.}
+\item{$\mu$ is the baseline mean of log WiFi speed (log(Speed).}
+  \item {$\tau_{i}$, $\beta_j$, $\gamma_k$ are the main effects for the factors obstacle, distance, and number of users on the mean of log(Speed), respectively.}
+  \item{${\tau\beta}_{ij}$,  ${\tau\gamma}_{ik}$, ${\beta\gamma}_{jk}$ are the two-factor interaction effects for the interaction \emph{obstacle * distance},\emph{obstacle * number of users}, and \emph{distance * number of users}.}
+  \item{${\tau\beta\gamma}_{ijk}$ are the three factor interaction effects on the mean log(Speed) for the \emph{obstacle * distance * number of users} interaction.}
+  \item{$\xi_{ijkl}$ is the random error of the $l^{th}$ observation from the $(i,j,k)^{th}$ treatment, assumed that $\xi_{ijkl}$ $\sim$ IID N(0, $\sigma^2$). }
+\end{itemize}
+
+The hypotheses involving this study include the following:
+\begin{itemize}
+  \item {$H_0$: $\tau_1$ = $\tau_2$ = 0, $H_a$: $\exists$ $\tau_i$ $\neq$ 0.}
+  \item{$H_0$: $\beta_1$ = $\beta_2$ = $\beta_3$ = 0, $H_a$: $\exists$ $\beta_j$$\neq$ 0.}
+  \item{$H_0$: $\gamma_1$ = $\gamma_2$ = $\gamma_3$ = 0, $H_a$: $\exists$ $\gamma_k$ $\neq$ 0.}
+  \item{$H_0$: $({\tau\beta})_{11}$ = $({\tau\beta})_{12}$ = ... = $({\tau\beta})_{23}$ = 0, $H_a$: $\exists$ $({\tau\beta})_{ij}$ $\neq$ 0.}
+  \item{$H_0$: $({\tau\gamma})_{11}$ = $({\tau\gamma})_{12}$ = ... = $({\tau\gamma})_{24}$ = 0, $H_a$:  $\exists$ $({\tau\gamma})_{ik}$ $\neq$ 0.}
+  \item{$H_0$: $({\beta\gamma})_{11}$ = $({\beta\gamma})_{12}$ = ... = $({\beta\gamma})_{34}$ = 0, $H_a$: $\exists$ $({\beta\gamma})_{jk}$ $\neq$ 0.}
+  \item{$H_0$: $({\tau\beta\gamma})_{111}$ = $({\tau\beta\gamma})_{12}$ = ... = $({\tau\beta\gamma})_{234}$= 0, $H_a$: $\exists$ $({\tau\beta\gamma})_{ijk}$ $\neq$ 0.}
+\end{itemize}
+
+Diagnostics plots were created for this new model (Figure 4). The Residuals vs. Fitted Value plot did not suggest severe violations of the constant variance assumption (though there is slightly more variability for the smallest fitted value). There are no clear outliers. Most of the residuals fall on a straight line in the Normal Q-Q plot, which suggests that there is no serve deviations from normality in the residual distribution. The model also assumes independence of the observations, which is met because we used Google Incognito tabs which don't store previous data, so that early runs could not affect later ones. So it is reasonable to assume that the experimental units in this study don't affect each other. All together, the results above suggest no serious violations of the model assumptions for using an ANOVA F-test. 
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{2a.png} 
+        \caption{Residual vs. Fitted Value} \label{fig:timing1}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{2b.png} 
+        \caption{Normal Quantitle-Quantile (Normal Q-Q) } \label{fig:timing2}
+    \end{subfigure}
+    \caption{Diagnostics Plots (after using logarithm transformation)}
+\end{figure}
+
+\section{Results}
+After checking the assumptions, an ANOVA F-test was conducted using the new model. Figure 5 below suggests the following results:
+\begin{itemize}
+  \item {There is strong evidence that the obstacles have effects on the mean of log(Speed). Thus, we reject the null hypothesis that $H_0$: $\tau_i$ = 0 (F(1, 96) = 21.32, p-value $<$ 0.0001, $\alpha$=0.05).}
+  \item{There is moderate evidence that the distance between WiFi router and WiFi users has effects on the mean of log(Speed). Thus, we reject the null hypothesis that $H_0$: $\beta_j$ = 0 (F(2, 96) = 5.08, p-value = 0.008, $\alpha$=0.05).}
+  \item{There is strong evidence against the null hypothesis that there is no effect of the number of WiFi users on the mean of log(Speed). Hence, we reject the null hypothesis that $H_0$: $\gamma_k$ = 0 (F(3,96) = 307.93, p-value $<$ 0.0001, $\alpha$ = 0.05).}
+  \item{There is strong evidence that there is a Distance*Obstacle interaction effect on the mean of log(Speed). So we reject the null hypothesis that $H_0$: $(\tau\beta)_{ij}$ (F(2,96) = 19.43, p-value $<$ 0.0001, $\alpha$ = 0.05).}
+  \item{There is no evidence that there is a Distance*Number\_User interaction effect on the mean of log(Speed). So we fail to reject the null hypothesis that $H_0$: $(\beta\gamma)_{jk}$ (F(6,96) = 1.69, p-value = 0.131, $\alpha$ = 0.05).}
+  \item{There is moderate evidence that there is a Obstacle*Number\_User interaction effect on the mean of log(Speed). So we reject the null hypothesis that $H_0$: $(\tau\gamma)_{ik}$ (F(3,96) = 4.02, p-value = 0.01, $\alpha$ = 0.05).}
+  \item{There is no evidence that there is a three-way interaction Distance*Obstacle*Number\_User interaction effect on the mean of log(Speed). So we fail to reject the null hypothesis that $H_0$: $(\tau\beta\gamma)_{ijk}$(F(6,96) = 1.52, p-value = 0.1807, $\alpha$ = 0.05).}
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{results.png}
+\caption{ANOVA Table}
+\end{figure}
+
+The table of 60 parameter estimates involved in this new model were stated in the Appendix. The $R^2$ = 0 of this model is 0.9144, which suggests that the model explains 91.44\% of the variance of the response log(Speed). A post-hoc power analysis was then conducted using the square root of MSE (0.118952), the actual total design size (120), and the 24 mean estimates. Figure 6 below includes actual power for each term in the model. 
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.5]{power.png}
+\caption{Post Hoc Power Analysis}
+\end{figure}
+The results suggest that this design has great powers in finding effects of Obstacle (power = 0.929), Distance*Obstacle (power = 0.997), and Number\_Users (power $>$ 0.999) on the mean of log(Speed), if these effects actually exist. It has moderate power in detecting an effect of Distance (power = 0.477) and Obstacle*Number\_Users (power = 0.484) on the mean of log(Speed). Although the power for Distance*Number\_Users (power = 0.293), and for Distance*Obstacle*Number\_Users (power = 0.352) are relatively lower than the powers for other terms in the model, these two powers are not extremely low. So it is appropriate to use this study design for detecting the effects of the factors of interest on the mean of log(Speed). 
+
+\section{Scope of Inference}
+The Apple devices and WiFi router are not randomly selected, so inferences of the study results cannot extend beyond this sample. All three factors are fixed, so difference of the effects of these factors are limited within the range of factors in this study design. However, we did randomly assign the treatments to four different Apple devices, so we can state that the differences in the mean of log(Speed) were due to this random assignment of the three fixed factors obstacle, distance, and number of WiFi users.
+
+\end{document}

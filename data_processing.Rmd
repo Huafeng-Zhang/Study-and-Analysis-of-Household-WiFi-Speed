@@ -1,0 +1,28 @@
+---
+title: "WiF"
+author: "Huafeng Zhang"
+date: "4/23/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("~/Desktop/441Project")
+wifi <- read.csv("WIFI.csv",header = TRUE)
+wifi$T_SPEED <- ((wifi$Speed)^0.4)
+library(dplyr)
+pa<- wifi %>% 
+  group_by(Distance,Obstacle,Number_Users) %>%
+  summarise(mean(T_SPEED))
+#write.csv(pa,"pa.csv")
+
+```
+
+$y_{ijkl}$ = $\mu$ + $\tau_i$ + $\beta_j$ + $\gamma_k$ + ${\tau\beta}_{ij}$ + ${\tau\gamma}_{ik}$ + ${\beta\gamma}_{jk}$ + ${\tau\beta\gamma}_{ijk}$ + $\xi_{ijkl}$
+
+$H_0$:$\tau_1$ = $\tau_2$ = 0, $H_a$: $\exist$ $\tau_i$ $\neq$ 0;
